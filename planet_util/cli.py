@@ -32,7 +32,7 @@ def build_scene_list(region, date_ranges):
     scenes = []
     coverage = None
     for from_date, to_date in date_ranges:
-        print(from_date, to_date)
+        # print(from_date, to_date)
         results = planet.quick_search(build_request(region, from_date, to_date), sort="acquired asc")
         for item in results.items_iter(limit=1000):
             if coverage is None:
@@ -45,6 +45,21 @@ def build_scene_list(region, date_ranges):
             coverage_area = coverage.area
     print("Coverage:", coverage.intersection(region).area / region.area, "Count:", len(scenes))
     return(scenes)
+
+def coverage(scenes, region):
+    g = ops.cascaded_union([shape(scene["geometry"]) for scene in scenes])
+    return g.intersection(region).area / region.area
+
+def reduce_scenes(scenes, region):
+    recs = sorted([(shape(scene["geometry"]).intersection(region).area, scene) for scene in scenes],
+                  key=lambda x: x[0])
+    removal_list = []
+    for idx in range(len(scenes)):
+        s = [rec[-1] for i, rec in enumerate(recs) if i != idx and i not in removal_list]
+        if coverage(s, region) == 1.0:
+            removal_list.append(idx)
+    return [rec[-1] for i, rec in enumerate(recs) if i not in removal_list]
+
 
 
 @click.command(help="Create a planetscope mosaic for a specified geojson geometry")
@@ -68,6 +83,8 @@ def mosaic(geom_file, months, idx, test):
     print(geom_file, idx, months, test)
     scenes = build_scene_list(region, build_date_ranges(months))
     print(len(scenes))
+    scenes = reduce_scenes(scenes, region)
+    print(len(scenes), coverage(scenes, region))
 
 
 if __name__ == "__main__":
