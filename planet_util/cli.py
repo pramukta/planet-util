@@ -10,6 +10,7 @@ planet = api.ClientV1()
 
 import click
 
+from util import coverage, reduce_scenes
 
 def build_date_ranges(months):
     today = dt.date.today()
@@ -47,20 +48,6 @@ def build_scene_list(region, date_ranges):
     print("Coverage:", coverage.intersection(region).area / region.area, "Count:", len(scenes))
     return(scenes)
 
-def coverage(scenes, region):
-    g = ops.cascaded_union([shape(scene["geometry"]) for scene in scenes])
-    return g.intersection(region).area / region.area
-
-def reduce_scenes(scenes, region):
-    recs = sorted([(shape(scene["geometry"]).intersection(region).area, scene) for scene in scenes],
-                  key=lambda x: x[0])
-    removal_list = []
-    ref_coverage = coverage(scenes, region)
-    for idx in range(len(scenes)):
-        s = [rec[-1] for i, rec in enumerate(recs) if i != idx and i not in removal_list]
-        if coverage(s, region) == ref_coverage:
-            removal_list.append(idx)
-    return [rec[-1] for i, rec in enumerate(recs) if i not in removal_list]
 
 @click.group()
 def cli():
@@ -86,9 +73,7 @@ def materials(geom_file, months, idx, test, output):
         g = geoms[idx]
         region = Polygon([c[:2] for c in g.convex_hull.exterior.coords])
 
-    print(geom_file, idx, months, test)
     scenes = build_scene_list(region, build_date_ranges(months))
-    print(len(scenes))
     scenes = reduce_scenes(scenes, region)
     print(len(scenes), coverage(scenes, region))
     scenes_geojson = {
@@ -104,18 +89,16 @@ def materials(geom_file, months, idx, test, output):
 def activate(scenes_file, product):
     with open(scenes_file) as f:
         scenes = json.load(f)
-
+    click.echo("Activating {} scenen.".format(len(scenes["features"])))
     ready_count = 0
     for idx, scene in enumerate(scenes["features"]):
         assets = planet.get_assets(scene).get()
         assert product in assets, "Desired product doesn't exist for specified scene"
-        print(idx, assets[product]["status"])
         if assets[product]["status"] == "inactive":
             planet.activate(assets[product])
         elif (assets[product]["status"]) == "active":
             ready_count = ready_count + 1
-
-    print("{}/{} images ready to download".format(ready_count, len(scenes["features"])))
+    click.echo("{}/{} images ready to download".format(ready_count, len(scenes["features"])))
 
 @cli.command(help="Download scenes in specified file, if they haven't been already")
 @click.option("--product", default="visual")
