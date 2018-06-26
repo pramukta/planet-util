@@ -32,20 +32,16 @@ def build_request(g, from_date, to_date):
 
 def build_scene_list(region, date_ranges):
     scenes = []
-    coverage = None
     for from_date, to_date in date_ranges:
         # print(from_date, to_date)
         results = planet.quick_search(build_request(region, from_date, to_date), sort="acquired asc")
         for item in results.items_iter(limit=1000):
-            if coverage is None:
-                coverage = shape(item["geometry"])
-            else:
-                if coverage_area < coverage.union(shape(item["geometry"])).area:
-                    coverage = coverage.union(shape(item["geometry"]))
-                    coverage_area = coverage.area
             scenes.append(item)
-            coverage_area = coverage.area
-    print("Coverage:", coverage.intersection(region).area / region.area, "Count:", len(scenes))
+    print("Coverage:",
+          ops.cascaded_union([shape(rec["geometry"])
+                              for rec in scenes]).intersection(region).area / region.area,
+          "Count:",
+          len(scenes))
     return(scenes)
 
 
