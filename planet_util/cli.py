@@ -1,6 +1,7 @@
 import os
 import json
 import datetime as dt
+import asyncio
 
 from shapely.geometry import shape, mapping, Polygon
 from shapely import ops
@@ -53,7 +54,6 @@ def cli():
 @cli.command(help="Create a planetscope mosaic for a specified geojson geometry")
 @click.option("--months", type=int, help="Number of months in the past to use.")
 @click.option("--idx", type=int, help="Index of a single geometry to consider inside the GeoJSON file (starting from 0) [optional]", default=None)
-@click.option("--test", is_flag=True, default=False)
 @click.option("--output", help="Output GeoJSON file")
 @click.argument("geom_file", type=click.Path(exists=True))
 def materials(geom_file, months, idx, test, output):
@@ -71,7 +71,7 @@ def materials(geom_file, months, idx, test, output):
 
     scenes = build_scene_list(region, build_date_ranges(months))
     scenes = reduce_scenes(scenes, region)
-    print(len(scenes), coverage(scenes, region))
+    click.echo(len(scenes), coverage(scenes, region))
     scenes_geojson = {
         "type": "FeatureCollection",
         "features": scenes
@@ -104,8 +104,11 @@ def download(scenes_file, product, path):
     with open(scenes_file) as f:
         scenes = json.load(f)
 
-    for idx, scene in enumerate(scenes["features"]):
-        asssets = planet.get_assets(scene).get()
+    assets = [planet.get_assets(scene).get()[product] for scene in scenes["features"]]
+
+    for asset in assets:
+        click.echo(asset)
+        planet.download(asset, api.write_to_file(path)).await()
 
 
 if __name__ == "__main__":
