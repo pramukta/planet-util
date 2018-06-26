@@ -10,6 +10,7 @@ planet = api.ClientV1()
 
 import click
 
+
 def build_date_ranges(months):
     today = dt.date.today()
     keydates = [today] + [today-dt.timedelta(days=31*(m+1)) for m in range(months)]
@@ -43,7 +44,6 @@ def build_scene_list(region, date_ranges):
                     coverage_area = coverage.area
             scenes.append(item)
             coverage_area = coverage.area
-            compl
     print("Coverage:", coverage.intersection(region).area / region.area, "Count:", len(scenes))
     return(scenes)
 
@@ -62,8 +62,12 @@ def reduce_scenes(scenes, region):
             removal_list.append(idx)
     return [rec[-1] for i, rec in enumerate(recs) if i not in removal_list]
 
+@click.group()
+def cli():
+    click.echo("Planet high level utilities.")
 
-@click.command(help="Create a planetscope mosaic for a specified geojson geometry")
+
+@cli.command(help="Create a planetscope mosaic for a specified geojson geometry")
 @click.option("--months", type=int, help="Number of months in the past to use.")
 @click.option("--idx", type=int, help="Index of a single geometry to consider inside the GeoJSON file (starting from 0) [optional]", default=None)
 @click.option("--test", is_flag=True, default=False)
@@ -94,7 +98,7 @@ def materials(geom_file, months, idx, test, output):
     with open(output, "w") as f:
         json.dump(scenes_geojson, f)
 
-@click.command(help="Activate scenes in specified file, if they aren't already")
+@cli.command(help="Activate scenes in specified file, if they aren't already")
 @click.option("--product", default="visual")
 @click.argument("scenes_file", type=click.Path(exists=True))
 def activate(scenes_file, product):
@@ -113,9 +117,9 @@ def activate(scenes_file, product):
 
     print("{}/{} images ready to download".format(ready_count, len(scenes["features"])))
 
-@click.command(help="Download scenes in specified file, if they haven't been already")
+@cli.command(help="Download scenes in specified file, if they haven't been already")
 @click.option("--product", default="visual")
-@click.option("--path", help="Download images to path", default=os.path.join(os.getcwd(),"planet"), click.Path(exists=True))
+@click.option("--path", help="Download images to path", default=os.path.join(os.getcwd(),"planet"), type=click.Path(exists=True))
 @click.argument("scenes_file", type=click.Path(exists=True))
 def download(scenes_file, product, path):
     with open(scenes_file) as f:
@@ -126,4 +130,4 @@ def download(scenes_file, product, path):
 
 
 if __name__ == "__main__":
-    activate()
+    cli()
