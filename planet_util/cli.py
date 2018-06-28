@@ -112,7 +112,7 @@ def download(scenes_file, product, path):
 
     files = [pth for pth in os.listdir(path) if pth.endswith(".tif")]
     try:
-        os.mkdir(os.path.join(path, "processed")
+        os.mkdir(os.path.join(path, "processed"))
     except FileExistsError:
         pass
 
