@@ -71,7 +71,8 @@ def materials(geom_file, months, idx, output):
     scenes = build_scene_list(region, build_date_ranges(months))
     scenes = reduce_scenes(scenes, g)
     click.echo("Reducing to {} scenes while maintaining {}% coverage.".format(len(scenes),
-                                                                              100*coverage(scenes, region)))    scenes_geojson = {
+                                                                              100*coverage(scenes, region)))
+    scenes_geojson = {
         "type": "FeatureCollection",
         "features": scenes
     }
