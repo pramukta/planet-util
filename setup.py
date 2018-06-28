@@ -14,6 +14,9 @@ setup(name='planet-util',
       author_email='pramukta.kumar@gmail.com',
       url='https://github.com/pramukta/planet-util',
       license='MIT',
+      entry_points = {
+          'console_scripts': ['planet-util=planet_util.cli:cli']
+      },
       packages=find_packages(exclude=['docs','tests']),
       include_package_data=True,
       zip_safe=True,

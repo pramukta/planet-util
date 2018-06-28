@@ -11,7 +11,7 @@ planet = api.ClientV1()
 
 import click
 
-from util import coverage, reduce_scenes
+from planet_util.util import coverage, reduce_scenes
 
 def build_date_ranges(months):
     today = dt.date.today()
@@ -34,7 +34,6 @@ def build_request(g, from_date, to_date):
 def build_scene_list(region, date_ranges):
     scenes = []
     for from_date, to_date in date_ranges:
-        # print(from_date, to_date)
         results = planet.quick_search(build_request(region, from_date, to_date), sort="acquired asc")
         for item in results.items_iter(limit=1000):
             scenes.append(item)
@@ -56,21 +55,21 @@ def cli():
 @click.option("--idx", type=int, help="Index of a single geometry to consider inside the GeoJSON file (starting from 0) [optional]", default=None)
 @click.option("--output", help="Output GeoJSON file")
 @click.argument("geom_file", type=click.Path(exists=True))
-def materials(geom_file, months, idx, test, output):
+def materials(geom_file, months, idx, output):
     with open(geom_file) as f:
         # TODO: Error handling
         geojson = json.load(f)
-        geoms = [shape(rec["geometry"]) for rec in geojson["features"]]
+        geoms = [shape(rec["geometry"]).convex_hull for rec in geojson["features"]]
 
     if idx is None:
         g = ops.cascaded_union(geoms).buffer(0.0)
     else:
         assert idx < len(geoms), "Specified geometry doesn't exist (index out of range)"
         g = geoms[idx]
-        region = Polygon([c[:2] for c in g.convex_hull.exterior.coords])
+    region = Polygon([c[:2] for c in g.convex_hull.exterior.coords])
 
     scenes = build_scene_list(region, build_date_ranges(months))
-    scenes = reduce_scenes(scenes, region)
+    scenes = reduce_scenes(scenes, g)
     click.echo(len(scenes), coverage(scenes, region))
     scenes_geojson = {
         "type": "FeatureCollection",
