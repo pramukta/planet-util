@@ -116,8 +116,8 @@ def download(scenes_file, product, path):
     except FileExistsError:
         pass
 
-    for pth in files:
-        dataset = rasterio.open(os.path.join("planet-peru", pth))
+    for pth in tqdm(files):
+        dataset = rasterio.open(os.path.join(path, pth))
         mask = dataset.read(4)
         data = dataset.read((1,2,3)).astype(np.uint16)
         for i in range(data.shape[0]):
