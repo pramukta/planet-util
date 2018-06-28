@@ -10,6 +10,7 @@ from planet import api
 planet = api.ClientV1()
 
 import click
+from tqdm import tqdm
 
 from planet_util.util import coverage, reduce_scenes
 
