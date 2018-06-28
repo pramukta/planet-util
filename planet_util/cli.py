@@ -110,6 +110,28 @@ def download(scenes_file, product, path):
         click.echo(asset)
         planet.download(asset, api.write_to_file(path)).await()
 
+    files = [pth for pth in os.listdir(path) if pth.endswith(".tif")]
+    try:
+        os.mkdir(os.path.join(path, "processed")
+    except FileExistsError:
+        pass
+
+    for pth in files:
+        dataset = rasterio.open(os.path.join("planet-peru", pth))
+        mask = dataset.read(4)
+        data = dataset.read((1,2,3)).astype(np.uint16)
+        for i in range(data.shape[0]):
+            data[i] = data[i] - 9999*(~mask > 0)
+
+        new_dataset = rasterio.open(os.path.join(path, "processed", pth), 'w', driver='GTiff',
+                            height=dataset.shape[0], width=dataset.shape[1],
+                            count=3, dtype=str(data.dtype), crs=dataset.crs,
+                            transform=dataset.affine, nodata=-9999)
+        new_dataset.write(data, [1, 2, 3])
+        dataset.close()
+        new_dataset.close()
+
+
 
 if __name__ == "__main__":
     cli()
