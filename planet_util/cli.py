@@ -3,6 +3,8 @@ import json
 import datetime as dt
 import asyncio
 
+import numpy as np
+import rasterio
 from shapely.geometry import shape, mapping, Polygon
 from shapely import ops
 
@@ -120,7 +122,7 @@ def download(scenes_file, product, path):
     for pth in tqdm(files):
         dataset = rasterio.open(os.path.join(path, pth))
         mask = dataset.read(4)
-        data = dataset.read((1,2,3)).astype(np.uint16)
+        data = dataset.read((1,2,3)).astype(np.int16)
         for i in range(data.shape[0]):
             data[i] = data[i] - 9999*(~mask > 0)
 
